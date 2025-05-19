@@ -8,6 +8,15 @@ from bs4 import BeautifulSoup
 from googletrans import Translator
 
 translator = Translator()
+
+
+def load_training_data(path: str = "labels.csv") -> List[dict]:
+    """Load existing labeled data for incremental heuristics."""
+    if not Path(path).exists():
+        return []
+    with open(path, newline="") as f:
+        reader = csv.DictReader(f)
+        return list(reader)
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QPushButton,
     QVBoxLayout, QHBoxLayout, QRadioButton, QComboBox, QLineEdit
@@ -44,6 +53,21 @@ def translate_to_english(text: str, max_chars: int = 5000) -> str:
 
 CATEGORIES = [
     "Retail",
+    "Restaurant",
+    "Cafe",
+    "Bar",
+    "Grocery",
+    "Fashion",
+    "Electronics",
+    "Home Services",
+    "Professional Services",
+    "Health & Wellness",
+    "Medical",
+    "Finance",
+    "Travel & Tourism",
+    "Hotel",
+    "Real Estate",
+    "Automotive",
     "Blog",
     "News",
     "Portfolio",
@@ -61,8 +85,40 @@ def simple_classify(html: str):
     """Very naive placeholder classification with expanded categories."""
     text_content = extract_text(html)
     text = translate_to_english(text_content).lower()
-    business = any(word in text for word in ["shop", "store", "buy"])
-    if any(word in text for word in ["shop", "store", "buy"]):
+    tokens = set(text.split())
+    training_data = load_training_data()
+    business = any(word in text for word in ["shop", "store", "buy", "service"])
+    if any(word in text for word in ["restaurant", "menu", "dining", "food"]):
+        category = "Restaurant"
+    elif any(word in text for word in ["cafe", "coffee"]):
+        category = "Cafe"
+    elif any(word in text for word in ["bar", "pub", "brew"]):
+        category = "Bar"
+    elif any(word in text for word in ["grocery", "supermarket"]):
+        category = "Grocery"
+    elif any(word in text for word in ["fashion", "clothing", "apparel"]):
+        category = "Fashion"
+    elif any(word in text for word in ["electronics", "gadget"]):
+        category = "Electronics"
+    elif any(word in text for word in ["plumbing", "cleaning", "repair"]):
+        category = "Home Services"
+    elif any(word in text for word in ["consulting", "lawyer", "accounting"]):
+        category = "Professional Services"
+    elif any(word in text for word in ["health", "wellness", "fitness", "gym"]):
+        category = "Health & Wellness"
+    elif any(word in text for word in ["clinic", "hospital", "medical"]):
+        category = "Medical"
+    elif any(word in text for word in ["finance", "bank", "insurance"]):
+        category = "Finance"
+    elif any(word in text for word in ["travel", "tourism", "flight"]):
+        category = "Travel & Tourism"
+    elif any(word in text for word in ["hotel", "resort"]):
+        category = "Hotel"
+    elif any(word in text for word in ["real estate", "realtor", "property"]):
+        category = "Real Estate"
+    elif any(word in text for word in ["car", "automotive", "auto"]):
+        category = "Automotive"
+    elif any(word in text for word in ["shop", "store", "buy"]):
         category = "Retail"
     elif any(word in text for word in ["news", "article", "press"]):
         category = "News"
@@ -85,7 +141,49 @@ def simple_classify(html: str):
     else:
         category = "Other"
 
+    # adjust category using prior labels
+    category_scores = {}
+    for row in training_data:
+        cat = row.get("category", "")
+        tags = row.get("tags", "")
+        for token in tags.split(','):
+            token = token.strip().lower()
+            if token and token in tokens:
+                category_scores[cat] = category_scores.get(cat, 0) + 1
+    if category_scores:
+        category = max(category_scores, key=category_scores.get)
+
     tags = []
+    if "restaurant" in text or "menu" in text:
+        tags.append("restaurant")
+    if "cafe" in text:
+        tags.append("cafe")
+    if "bar" in text or "pub" in text:
+        tags.append("bar")
+    if "grocery" in text or "supermarket" in text:
+        tags.append("grocery")
+    if "fashion" in text or "clothing" in text:
+        tags.append("fashion")
+    if "electronics" in text:
+        tags.append("electronics")
+    if any(word in text for word in ["plumbing", "cleaning", "repair"]):
+        tags.append("home services")
+    if any(word in text for word in ["consulting", "lawyer", "accounting"]):
+        tags.append("professional services")
+    if any(word in text for word in ["health", "wellness", "fitness", "gym"]):
+        tags.append("health")
+    if "medical" in text or "clinic" in text:
+        tags.append("medical")
+    if any(word in text for word in ["finance", "bank", "insurance"]):
+        tags.append("finance")
+    if any(word in text for word in ["travel", "tourism", "flight"]):
+        tags.append("travel")
+    if "hotel" in text or "resort" in text:
+        tags.append("hotel")
+    if "real estate" in text or "realtor" in text:
+        tags.append("real estate")
+    if "car" in text or "auto" in text:
+        tags.append("automotive")
     if "blog" in text:
         tags.append("blog")
     if "news" in text:
@@ -129,7 +227,7 @@ class MainWindow(QMainWindow):
         next_btn.clicked.connect(self.next_site)
 
         save_btn = QPushButton("Save")
-        save_btn.clicked.connect(self.save_current)
+        save_btn.clicked.connect(self.save_current_record)
 
         layout = QVBoxLayout()
         layout.addWidget(self.url_label)
@@ -154,7 +252,16 @@ class MainWindow(QMainWindow):
 
         self.next_site()
 
+    def closeEvent(self, event):
+        # ensure current progress is saved when closing the window
+        self.save_current_record()
+        super().closeEvent(event)
+
     def next_site(self):
+        # save current entry before moving on
+        if self.index >= 0:
+            self.save_current_record()
+
         self.index += 1
         if self.index >= len(self.urls):
             self.url_label.setText("Done!")
@@ -162,7 +269,11 @@ class MainWindow(QMainWindow):
             return
         url = self.urls[self.index]
         self.url_label.setText(url)
-        self.web_view.load(QUrl(url))
+        # load via Google Translate for automatic English view
+        translate_url = (
+            f"https://translate.google.com/translate?sl=auto&tl=en&u={url}"
+        )
+        self.web_view.load(QUrl(translate_url))
         html = fetch_html(url)
         self.current_html = html
         pred = simple_classify(html)
@@ -174,8 +285,8 @@ class MainWindow(QMainWindow):
             f"Predicted: {'Business' if pred['business'] else 'Personal'}, {pred['category']}"
         )
 
-    def save_current(self):
-        if self.index >= len(self.urls):
+    def save_current_record(self):
+        if self.index < 0 or self.index >= len(self.urls):
             return
         url = self.urls[self.index]
         data = {
@@ -190,9 +301,6 @@ class MainWindow(QMainWindow):
             if not file_exists:
                 writer.writeheader()
             writer.writerow(data)
-        self.next_site()
-
-
 def load_urls(path: str) -> List[str]:
     with open(path) as f:
         return [line.strip() for line in f if line.strip()]
