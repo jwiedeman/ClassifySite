@@ -18,4 +18,6 @@ Each time you move to the next site your selections are saved automatically, let
 
 The application will try to guess whether a site is a business, its category, and content tags using a simple heuristic. You can correct the predictions and save the labels to `labels.csv`. The category drop-down now contains many common business types. Previous labels are loaded on each step to refine future predictions as you work.
 
+Each record also stores a simple **status** flag (`ok`, `redirect`, or `unavailable`) so you can mark pages that fail to load or immediately redirect.
+
 **Note:** The classification logic is a placeholder. Integrate your preferred LLM or machine learning model for better results.
