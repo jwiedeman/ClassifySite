@@ -5,9 +5,11 @@ from typing import List
 
 import requests
 from bs4 import BeautifulSoup
-from googletrans import Translator
-
-translator = Translator()
+try:
+    from googletrans import Translator
+    translator = Translator()
+except Exception:
+    translator = None
 
 
 def load_training_data(path: str = "labels.csv") -> List[dict]:
@@ -19,8 +21,11 @@ def load_training_data(path: str = "labels.csv") -> List[dict]:
         return list(reader)
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QPushButton,
-    QVBoxLayout, QHBoxLayout, QRadioButton, QComboBox, QLineEdit
+    QVBoxLayout, QHBoxLayout, QRadioButton, QComboBox, QLineEdit,
+    QMessageBox,
 )
+import io
+from contextlib import redirect_stdout
 from PySide6.QtCore import QUrl
 from PySide6.QtWebEngineWidgets import QWebEngineView
 
@@ -47,6 +52,8 @@ def extract_text(html: str) -> str:
 def translate_to_english(text: str, max_chars: int = 5000) -> str:
     """Translate text to English using Google Translate."""
     snippet = text[:max_chars]
+    if translator is None:
+        return snippet
     try:
         return translator.translate(snippet, dest="en").text
     except Exception:
@@ -236,6 +243,9 @@ class MainWindow(QMainWindow):
         save_btn = QPushButton("Save")
         save_btn.clicked.connect(self.save_current_record)
 
+        train_btn = QPushButton("Train Model")
+        train_btn.clicked.connect(self.train_model_ui)
+
         layout = QVBoxLayout()
         layout.addWidget(self.url_label)
         layout.addWidget(self.web_view)
@@ -251,6 +261,7 @@ class MainWindow(QMainWindow):
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(save_btn)
+        hlayout.addWidget(train_btn)
         hlayout.addWidget(next_btn)
         layout.addLayout(hlayout)
 
@@ -316,6 +327,21 @@ class MainWindow(QMainWindow):
             if not file_exists:
                 writer.writeheader()
             writer.writerow(data)
+
+    def train_model_ui(self):
+        from train_model import load_dataset, evaluate_heuristics, train_model as train_model_func
+        try:
+            data = load_dataset()
+            if not data:
+                QMessageBox.information(self, "Training", "No training data found in labels.csv")
+                return
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                evaluate_heuristics(data)
+                train_model_func(data)
+            QMessageBox.information(self, "Training Complete", buf.getvalue())
+        except Exception as e:
+            QMessageBox.critical(self, "Training Error", str(e))
 def load_urls(path: str) -> List[str]:
     with open(path) as f:
         return [line.strip() for line in f if line.strip()]
