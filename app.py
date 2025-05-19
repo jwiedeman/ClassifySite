@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List
 
 import requests
-from pyside6.QtWidgets import (
+from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QPushButton,
     QVBoxLayout, QHBoxLayout, QRadioButton, QComboBox, QLineEdit
 )
