@@ -8,6 +8,8 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QPushButton,
     QVBoxLayout, QHBoxLayout, QRadioButton, QComboBox, QLineEdit
 )
+from PySide6.QtCore import QUrl
+from PySide6.QtWebEngineWidgets import QWebEngineView
 
 
 def fetch_html(url: str) -> str:
@@ -19,14 +21,60 @@ def fetch_html(url: str) -> str:
         return ""
 
 
+CATEGORIES = [
+    "Retail",
+    "Blog",
+    "News",
+    "Portfolio",
+    "Forum",
+    "Entertainment",
+    "Education",
+    "Government",
+    "Non-profit",
+    "Technology",
+    "Other",
+]
+
+
 def simple_classify(html: str):
-    """Very naive placeholder classification."""
+    """Very naive placeholder classification with expanded categories."""
     text = html.lower()
     business = any(word in text for word in ["shop", "store", "buy"])
-    category = "Retail" if "shop" in text else "Other"
+    if any(word in text for word in ["shop", "store", "buy"]):
+        category = "Retail"
+    elif any(word in text for word in ["news", "article", "press"]):
+        category = "News"
+    elif any(word in text for word in ["portfolio", "resume", "cv"]):
+        category = "Portfolio"
+    elif "forum" in text or "community" in text:
+        category = "Forum"
+    elif any(word in text for word in ["game", "music", "movie"]):
+        category = "Entertainment"
+    elif any(word in text for word in ["school", "university", "course"]):
+        category = "Education"
+    elif any(word in text for word in ["gov", "government"]):
+        category = "Government"
+    elif any(word in text for word in ["non-profit", "donate", "charity"]):
+        category = "Non-profit"
+    elif any(word in text for word in ["tech", "software", "cloud"]):
+        category = "Technology"
+    elif "blog" in text:
+        category = "Blog"
+    else:
+        category = "Other"
+
     tags = []
     if "blog" in text:
         tags.append("blog")
+    if "news" in text:
+        tags.append("news")
+    if "shop" in text:
+        tags.append("shop")
+    if "forum" in text:
+        tags.append("forum")
+    if "portfolio" in text:
+        tags.append("portfolio")
+
     return {
         "business": business,
         "category": category,
@@ -42,6 +90,8 @@ class MainWindow(QMainWindow):
         self.current_html = ""
         self.setWindowTitle("Site Classifier")
 
+        self.web_view = QWebEngineView()
+
         self.url_label = QLabel("")
         self.pred_label = QLabel("")
 
@@ -49,7 +99,7 @@ class MainWindow(QMainWindow):
         self.business_no = QRadioButton("Personal")
 
         self.category_box = QComboBox()
-        self.category_box.addItems(["Retail", "Blog", "Other"])
+        self.category_box.addItems(CATEGORIES)
 
         self.tags_edit = QLineEdit()
 
@@ -61,6 +111,7 @@ class MainWindow(QMainWindow):
 
         layout = QVBoxLayout()
         layout.addWidget(self.url_label)
+        layout.addWidget(self.web_view)
         layout.addWidget(self.pred_label)
         layout.addWidget(self.business_yes)
         layout.addWidget(self.business_no)
@@ -77,6 +128,7 @@ class MainWindow(QMainWindow):
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
+        self.resize(1000, 800)
 
         self.next_site()
 
@@ -88,6 +140,7 @@ class MainWindow(QMainWindow):
             return
         url = self.urls[self.index]
         self.url_label.setText(url)
+        self.web_view.load(QUrl(url))
         html = fetch_html(url)
         self.current_html = html
         pred = simple_classify(html)
