@@ -25,13 +25,15 @@ from PySide6.QtCore import QUrl
 from PySide6.QtWebEngineWidgets import QWebEngineView
 
 
-def fetch_html(url: str) -> str:
+def fetch_html(url: str) -> tuple[str, str]:
+    """Return page HTML and a simple availability status."""
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=10, allow_redirects=True)
         response.raise_for_status()
-        return response.text
+        status = "redirect" if response.history else "ok"
+        return response.text, status
     except Exception:
-        return ""
+        return "", "unavailable"
 
 
 def extract_text(html: str) -> str:
@@ -83,6 +85,8 @@ CATEGORIES = [
 
 def simple_classify(html: str):
     """Very naive placeholder classification with expanded categories."""
+    if not html:
+        return {"business": False, "category": "Other", "tags": ""}
     text_content = extract_text(html)
     text = translate_to_english(text_content).lower()
     tokens = set(text.split())
@@ -221,6 +225,9 @@ class MainWindow(QMainWindow):
         self.category_box = QComboBox()
         self.category_box.addItems(CATEGORIES)
 
+        self.status_box = QComboBox()
+        self.status_box.addItems(["ok", "redirect", "unavailable"])
+
         self.tags_edit = QLineEdit()
 
         next_btn = QPushButton("Next")
@@ -237,6 +244,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.business_no)
         layout.addWidget(QLabel("Category"))
         layout.addWidget(self.category_box)
+        layout.addWidget(QLabel("Status"))
+        layout.addWidget(self.status_box)
         layout.addWidget(QLabel("Tags (comma separated)"))
         layout.addWidget(self.tags_edit)
 
@@ -274,16 +283,21 @@ class MainWindow(QMainWindow):
             f"https://translate.google.com/translate?sl=auto&tl=en&u={url}"
         )
         self.web_view.load(QUrl(translate_url))
-        html = fetch_html(url)
+        html, status = fetch_html(url)
         self.current_html = html
-        pred = simple_classify(html)
+        self.status_box.setCurrentText(status)
+        if status == "ok":
+            pred = simple_classify(html)
+            self.pred_label.setText(
+                f"Predicted: {'Business' if pred['business'] else 'Personal'}, {pred['category']}"
+            )
+        else:
+            pred = {"business": False, "category": "Other", "tags": ""}
+            self.pred_label.setText(f"Site status: {status}")
         self.business_yes.setChecked(pred["business"])
         self.business_no.setChecked(not pred["business"])
         self.category_box.setCurrentText(pred["category"])
         self.tags_edit.setText(pred["tags"])
-        self.pred_label.setText(
-            f"Predicted: {'Business' if pred['business'] else 'Personal'}, {pred['category']}"
-        )
 
     def save_current_record(self):
         if self.index < 0 or self.index >= len(self.urls):
@@ -291,6 +305,7 @@ class MainWindow(QMainWindow):
         url = self.urls[self.index]
         data = {
             "url": url,
+            "status": self.status_box.currentText(),
             "business": self.business_yes.isChecked(),
             "category": self.category_box.currentText(),
             "tags": self.tags_edit.text(),
