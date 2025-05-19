@@ -21,3 +21,19 @@ The application will try to guess whether a site is a business, its category, an
 Each record also stores a simple **status** flag (`ok`, `redirect`, or `unavailable`) so you can mark pages that fail to load or immediately redirect.
 
 **Note:** The classification logic is a placeholder. Integrate your preferred LLM or machine learning model for better results.
+
+## Training a model
+
+After labeling some sites you can train a simple text classifier and compare it
+with the built-in heuristic. The `train_model.py` script downloads the HTML for
+each labeled URL, extracts English text and trains a logistic regression model.
+It also reports the accuracy of the heuristic approach for reference.
+
+Run the training script with:
+
+```bash
+python train_model.py
+```
+
+The script prints evaluation metrics and writes `model.pkl` containing the
+trained model.
