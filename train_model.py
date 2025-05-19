@@ -19,11 +19,12 @@ def load_dataset(labels_path: str = "labels.csv"):
     with open(labels_path, newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            if row.get("status") != "ok":
+            row_status = row.get("status", "ok")
+            if row_status != "ok":
                 continue
             url = row["url"]
-            html, status = fetch_html(url)
-            if status != "ok" or not html:
+            html, fetch_status = fetch_html(url)
+            if fetch_status != "ok" or not html:
                 continue
             text = translate_to_english(extract_text(html))
             records.append({"text": text, "category": row["category"], "url": url})
