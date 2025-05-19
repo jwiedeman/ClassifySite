@@ -1,0 +1,43 @@
+url,business,category,tags
+https://vakilmodafehteam.ir,True,Retail,
+https://stephenaverett.com,True,Portfolio,photography
+https://jmsystemrs.com,True,Technology,"it,consulting"
+https://citymartgrime.shop,True,Retail,shop
+https://vakilmodafehteam.ir,True,Professional Services,"law,legal"
+https://fletex.com.co,False,Other,
+https://fletex.pe,True,Professional Services,"quote,service"
+https://mein-alpenherz.de,True,Retail,"news,shop"
+https://madeleenvandenberg.co.za,True,Technology,finance
+https://marcoluciano.org,False,Other,
+https://hairatelier-rafu.com,False,Health & Wellness,"salon,blog"
+https://uaglqo.info,False,Other,
+https://myhousett.com,False,Other,
+https://shangri-lalloydminster.com,True,Restaurant,restaurant
+https://greywall.co.uk,False,Other,
+https://clientmailer.nl,False,Other,
+https://zamok-karhumyaki.ru,True,Non-profit,museum
+https://rovtotaalbouw.nl,True,Professional Services,"construction,blog"
+https://moje-racunovodstvo.com,False,Other,
+https://uwssoccer.com,True,Travel & Tourism,"sports,team"
+https://modernstairandrailing.com,True,Professional Services,"restaurant,automotive,portfolio"
+https://modernstairandrailing.com,True,Professional Services,"restaurant,automotive,portfolio"
+https://stephenaverett.com,redirect,True,Portfolio,photography
+https://stephenaverett.com,ok,True,Technology,photography
+https://jmsystemrs.com,ok,True,Technology,"it,solutions"
+https://citymartgrime.shop,ok,True,Retail,shop
+https://vakilmodafehteam.ir,ok,True,Professional Services,"legal,lawyer"
+https://fletex.com.co,unavailable,False,Other,
+https://fletex.pe,ok,True,Professional Services,"import,logistics"
+https://mein-alpenherz.de,ok,True,Retail,shop
+https://madeleenvandenberg.co.za,ok,True,Professional Services,finance
+https://marcoluciano.org,unavailable,False,Other,
+https://hairatelier-rafu.com,ok,True,Health & Wellness,"salon,blog"
+https://uaglqo.info,redirect,False,Other,
+https://myhousett.com,ok,False,Other,
+https://shangri-lalloydminster.com,ok,True,Restaurant,restaurant
+https://greywall.co.uk,unavailable,False,Other,
+https://clientmailer.nl,unavailable,False,Other,
+https://zamok-karhumyaki.ru,ok,True,Non-profit,museum
+https://rovtotaalbouw.nl,ok,False,Blog,transport
+https://moje-racunovodstvo.com,unavailable,False,Other,
+https://uwssoccer.com,ok,True,Entertainment,"sports,soccer"
