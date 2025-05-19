@@ -1,12 +1,12 @@
 # ClassifySite
 
 A simple desktop app that loads a list of URLs, shows the page in an embedded browser, and helps you classify the site. Results are stored locally for future model training.
-Pages are automatically translated to English using Google Translate so you can work with foreign language sites.
+Pages are automatically translated to English using Google Translate (if available) so you can work with foreign language sites.
 Each time you move to the next site your selections are saved automatically, letting you quit at any time without losing progress.
 
 ## Usage
 
-1. Install dependencies (make sure your PySide6 installation includes the WebEngine module):
+1. Install dependencies (make sure your PySide6 installation includes the WebEngine module). Translation is optional, so failures to install `googletrans` on newer Python versions are safe to ignore:
    ```bash
    pip install -r requirements.txt
    ```
@@ -25,15 +25,12 @@ Each record also stores a simple **status** flag (`ok`, `redirect`, or `unavaila
 ## Training a model
 
 After labeling some sites you can train a simple text classifier and compare it
-with the built-in heuristic. The `train_model.py` script downloads the HTML for
-each labeled URL, extracts English text and trains a logistic regression model.
-It also reports the accuracy of the heuristic approach for reference.
+with the built-in heuristic. Training can be initiated directly from the
+application by clicking **"Train Model"**. Results are shown in a pop up dialog
+and the trained model is written to `model.pkl`.
 
-Run the training script with:
+If you prefer running from the command line you can still execute the script:
 
 ```bash
 python train_model.py
 ```
-
-The script prints evaluation metrics and writes `model.pkl` containing the
-trained model.
