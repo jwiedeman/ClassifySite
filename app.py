@@ -4,6 +4,10 @@ from pathlib import Path
 from typing import List
 
 import requests
+from bs4 import BeautifulSoup
+from googletrans import Translator
+
+translator = Translator()
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QPushButton,
     QVBoxLayout, QHBoxLayout, QRadioButton, QComboBox, QLineEdit
@@ -19,6 +23,23 @@ def fetch_html(url: str) -> str:
         return response.text
     except Exception:
         return ""
+
+
+def extract_text(html: str) -> str:
+    """Return visible text from HTML."""
+    soup = BeautifulSoup(html, "html.parser")
+    for elem in soup(["script", "style"]):
+        elem.extract()
+    return soup.get_text(separator=" ")
+
+
+def translate_to_english(text: str, max_chars: int = 5000) -> str:
+    """Translate text to English using Google Translate."""
+    snippet = text[:max_chars]
+    try:
+        return translator.translate(snippet, dest="en").text
+    except Exception:
+        return snippet
 
 
 CATEGORIES = [
@@ -38,7 +59,8 @@ CATEGORIES = [
 
 def simple_classify(html: str):
     """Very naive placeholder classification with expanded categories."""
-    text = html.lower()
+    text_content = extract_text(html)
+    text = translate_to_english(text_content).lower()
     business = any(word in text for word in ["shop", "store", "buy"])
     if any(word in text for word in ["shop", "store", "buy"]):
         category = "Retail"
