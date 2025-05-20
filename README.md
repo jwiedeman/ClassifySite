@@ -29,6 +29,11 @@ with the built-in heuristic. Training can be initiated directly from the
 application by clicking **"Train Model"**. Results are shown in a pop up dialog
 and the trained model is written to `model.pkl`.
 
+Once a model is saved you can load it in the application by clicking
+**"Load Model"**. When loaded, the predicted category will come from the
+trained model instead of the heuristic so you can iteratively refine the
+classifier as you label more data.
+
 If you prefer running from the command line you can still execute the script:
 
 ```bash

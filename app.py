@@ -1,10 +1,11 @@
 import sys
 import csv
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import requests
 from bs4 import BeautifulSoup
+import joblib
 try:
     from googletrans import Translator
     translator = Translator()
@@ -20,8 +21,16 @@ def load_training_data(path: str = "labels.csv") -> List[dict]:
         reader = csv.DictReader(f)
         return list(reader)
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QLabel, QPushButton,
-    QVBoxLayout, QHBoxLayout, QRadioButton, QComboBox, QLineEdit,
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QHBoxLayout,
+    QRadioButton,
+    QComboBox,
+    QLineEdit,
     QMessageBox,
 )
 import io
@@ -88,6 +97,24 @@ CATEGORIES = [
     "Technology",
     "Other",
 ]
+
+
+def load_model(path: str = "model.pkl") -> Optional[dict]:
+    """Load a previously trained model."""
+    if not Path(path).exists():
+        raise FileNotFoundError(f"{path} not found")
+    return joblib.load(path)
+
+
+def classify_with_model(html: str, model_data: dict) -> str:
+    """Predict the category of a page using a trained model."""
+    if not html:
+        return "Other"
+    text = translate_to_english(extract_text(html))
+    vec = model_data["vectorizer"]
+    model = model_data["model"]
+    X = vec.transform([text])
+    return model.predict(X)[0]
 
 
 def simple_classify(html: str):
@@ -219,6 +246,7 @@ class MainWindow(QMainWindow):
         self.urls = urls
         self.index = -1
         self.current_html = ""
+        self.model_data: Optional[dict] = None
         self.setWindowTitle("Site Classifier")
 
         self.web_view = QWebEngineView()
@@ -246,6 +274,9 @@ class MainWindow(QMainWindow):
         train_btn = QPushButton("Train Model")
         train_btn.clicked.connect(self.train_model_ui)
 
+        load_btn = QPushButton("Load Model")
+        load_btn.clicked.connect(self.load_model_ui)
+
         layout = QVBoxLayout()
         layout.addWidget(self.url_label)
         layout.addWidget(self.web_view)
@@ -262,6 +293,7 @@ class MainWindow(QMainWindow):
         hlayout = QHBoxLayout()
         hlayout.addWidget(save_btn)
         hlayout.addWidget(train_btn)
+        hlayout.addWidget(load_btn)
         hlayout.addWidget(next_btn)
         layout.addLayout(hlayout)
 
@@ -299,6 +331,11 @@ class MainWindow(QMainWindow):
         self.status_box.setCurrentText(status)
         if status == "ok":
             pred = simple_classify(html)
+            if self.model_data:
+                try:
+                    pred["category"] = classify_with_model(html, self.model_data)
+                except Exception as e:
+                    QMessageBox.warning(self, "Model Error", str(e))
             self.pred_label.setText(
                 f"Predicted: {'Business' if pred['business'] else 'Personal'}, {pred['category']}"
             )
@@ -342,6 +379,14 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Training Complete", buf.getvalue())
         except Exception as e:
             QMessageBox.critical(self, "Training Error", str(e))
+
+    def load_model_ui(self):
+        """Load a trained model from disk for future predictions."""
+        try:
+            self.model_data = load_model()
+            QMessageBox.information(self, "Model Loaded", "model.pkl loaded successfully")
+        except Exception as e:
+            QMessageBox.critical(self, "Load Error", str(e))
 def load_urls(path: str) -> List[str]:
     with open(path) as f:
         return [line.strip() for line in f if line.strip()]
